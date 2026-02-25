@@ -1,0 +1,217 @@
+{
+  "info": {
+    "name": "API Security Audit - Future Interns 2026",
+    "description": "Read-only API Security Risk Analysis collection for testing JSONPlaceholder and ReqRes APIs.\n\n⚠ ETHICAL SCOPE: Read-only testing only. No exploitation. No DoS testing.\nFramework: OWASP API Security Top 10 (2023)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "📁 JSONPlaceholder Tests",
+      "item": [
+        {
+          "name": "F1 - GET All Users (No Auth Required)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://jsonplaceholder.typicode.com/users",
+              "protocol": "https",
+              "host": ["jsonplaceholder", "typicode", "com"],
+              "path": ["users"]
+            },
+            "description": "FINDING F1 | Severity: HIGH | OWASP: API2:2023\n\nTest: Can we retrieve all users with NO authentication?\nExpected (secure): HTTP 401 Unauthorized\nActual: HTTP 200 OK — Full user list returned with no token required.\n\nRisk: Any anonymous internet user can access the complete user database including names, emails, phone numbers, addresses, and geo-coordinates."
+          }
+        },
+        {
+          "name": "F2 - GET User by ID (BOLA - User 1)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://jsonplaceholder.typicode.com/users/1",
+              "protocol": "https",
+              "host": ["jsonplaceholder", "typicode", "com"],
+              "path": ["users", "1"]
+            },
+            "description": "FINDING F2 | Severity: HIGH | OWASP: API1:2023\n\nTest: Can we access User 1's data with no ownership check?\nExpected (secure): HTTP 403 if requesting user is not User 1\nActual: HTTP 200 — Complete user profile returned.\n\nRisk: BOLA vulnerability. Change ID to /users/2, /users/3 etc. to access any user."
+          }
+        },
+        {
+          "name": "F2 - GET User by ID (BOLA - User 2)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://jsonplaceholder.typicode.com/users/2",
+              "protocol": "https",
+              "host": ["jsonplaceholder", "typicode", "com"],
+              "path": ["users", "2"]
+            },
+            "description": "FINDING F2 CONTINUED | Enumeration test — change ID from 1 to 2 to access a different user's data. No error returned."
+          }
+        },
+        {
+          "name": "F3 - POST Create Post (No Auth)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Security Test Post\",\n  \"body\": \"This post was created with NO authentication token. In a real system this is a critical vulnerability.\",\n  \"userId\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "https://jsonplaceholder.typicode.com/posts",
+              "protocol": "https",
+              "host": ["jsonplaceholder", "typicode", "com"],
+              "path": ["posts"]
+            },
+            "description": "FINDING F3 | Severity: HIGH | OWASP: API2:2023\n\nTest: Can we create data with NO authentication?\nExpected (secure): HTTP 401 Unauthorized\nActual: HTTP 201 Created — Data accepted with no token.\n\nRisk: Anyone can create, spam, or inject data without logging in."
+          }
+        },
+        {
+          "name": "F4 - Rate Limit Test (Send Multiple Times)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://jsonplaceholder.typicode.com/users",
+              "protocol": "https",
+              "host": ["jsonplaceholder", "typicode", "com"],
+              "path": ["users"]
+            },
+            "description": "FINDING F4 | Severity: MEDIUM | OWASP: API4:2023\n\nTest: Does the API block or throttle repeated rapid requests?\nInstructions: Click Send 20+ times rapidly (or use Postman Runner)\nExpected (secure): HTTP 429 Too Many Requests after threshold\nActual: HTTP 200 every time — No rate limiting present.\n\nLook for headers: X-RateLimit-Limit, X-RateLimit-Remaining, Retry-After\nResult: NONE of these headers present."
+          }
+        },
+        {
+          "name": "F5 - Excessive Data Exposure Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://jsonplaceholder.typicode.com/users/1",
+              "protocol": "https",
+              "host": ["jsonplaceholder", "typicode", "com"],
+              "path": ["users", "1"]
+            },
+            "description": "FINDING F5 | Severity: MEDIUM | OWASP: API3:2023\n\nTest: How many fields does the API return? Are all of them necessary?\n\nCount the fields in the response:\n- id, name, username, email (4 — potentially needed)\n- address.street, .suite, .city, .zipcode (4 — usually not needed in API responses)\n- address.geo.lat, .geo.lng (2 — privacy risk: physical location)\n- phone, website (2 — often unnecessary)\n- company.name, .catchPhrase, .bs (3 — almost never needed)\n\nTotal: 15+ fields returned when most use cases need 2-3.\nRisk: Excessive data exposure increases breach impact."
+          }
+        },
+        {
+          "name": "F7 - Inspect Response Headers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://jsonplaceholder.typicode.com/posts/1",
+              "protocol": "https",
+              "host": ["jsonplaceholder", "typicode", "com"],
+              "path": ["posts", "1"]
+            },
+            "description": "FINDING F7 | Severity: LOW | OWASP: API8:2023\n\nAfter sending this request, click the 'Headers' tab in the Response panel.\n\nCheck for MISSING security headers:\n❌ X-Content-Type-Options (should be: nosniff)\n❌ X-Frame-Options (should be: DENY)\n❌ Content-Security-Policy (should be present)\n❌ Strict-Transport-Security (should be present)\n❌ X-RateLimit-* headers (should be present)\n❌ Permissions-Policy (should be present)\n\nThese are all missing = Security Misconfiguration finding."
+          }
+        }
+      ]
+    },
+    {
+      "name": "📁 ReqRes Tests",
+      "item": [
+        {
+          "name": "Step 1 - Login and Get Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"eve.holt@reqres.in\",\n  \"password\": \"cityslicka\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "https://reqres.in/api/login",
+              "protocol": "https",
+              "host": ["reqres", "in"],
+              "path": ["api", "login"]
+            },
+            "description": "Setup: Get authentication token from ReqRes login.\n\nNote the 'token' value in the response — save it.\nThis token SHOULD be required for subsequent requests.\nFinding F6 tests whether the token is actually enforced."
+          }
+        },
+        {
+          "name": "F6 - GET Users WITHOUT Token (Should Fail)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://reqres.in/api/users",
+              "protocol": "https",
+              "host": ["reqres", "in"],
+              "path": ["api", "users"]
+            },
+            "description": "FINDING F6 | Severity: MEDIUM | OWASP: API2:2023\n\nTest: Does the /api/users endpoint require the auth token we got from login?\nExpected (secure): HTTP 401 Unauthorized (token required)\nActual: HTTP 200 OK — Full user list returned WITHOUT any token.\n\nRisk: The login system issues tokens but they are never actually enforced.\nThe authentication mechanism is cosmetic — any unauthenticated request succeeds."
+          }
+        },
+        {
+          "name": "F6 - GET Users WITH Token (Compare)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer QpwL5tpe83ilfN2",
+                "description": "Token from login response — replace with actual token"
+              }
+            ],
+            "url": {
+              "raw": "https://reqres.in/api/users",
+              "protocol": "https",
+              "host": ["reqres", "in"],
+              "path": ["api", "users"]
+            },
+            "description": "Comparison test: Send the same request WITH the auth token.\n\nBoth the authenticated and unauthenticated requests return HTTP 200.\nThis confirms the token is not being validated server-side.\nThe presence or absence of the token makes no difference."
+          }
+        },
+        {
+          "name": "F7 - ReqRes Header Inspection",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://reqres.in/api/users/1",
+              "protocol": "https",
+              "host": ["reqres", "in"],
+              "path": ["api", "users", "1"]
+            },
+            "description": "FINDING F7 (continued) | Severity: LOW | OWASP: API8:2023\n\nCheck response headers for the same missing security headers as JSONPlaceholder.\nVerify both APIs share this finding."
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "jsonplaceholder_base",
+      "value": "https://jsonplaceholder.typicode.com"
+    },
+    {
+      "key": "reqres_base",
+      "value": "https://reqres.in"
+    }
+  ]
+}
